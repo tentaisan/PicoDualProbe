@@ -1,0 +1,16 @@
+diff --git a/minichlink/minichgdb.c b/minichlink/minichgdb.c
+index e1831e1..b090aaa 100644
+--- a/minichlink/minichgdb.c
++++ b/minichlink/minichgdb.c
+@@ -265,6 +265,11 @@ int RVDebugExec( void * dev, enum HaltResetResumeType halt_reset_or_resume, int
+ 			// This is a known breakpoint.  Need to set it back.  Single Step.  Then continue.
+ 			InternalClearFlashOfSoftwareBreakpoint( dev, matchingbreakpoint );
+ 			MCF.SetEnableBreakpoints( dev, 1, 1 );
++			RVCommandEpilogue( dev );
++			MCF.HaltMode( dev, HALT_MODE_RESUME );
++			MCF.HaltMode( dev, HALT_MODE_HALT_BUT_NO_RESET );
++			RVCommandPrologue( dev );
++			MCF.SetEnableBreakpoints( dev, 1, 0 );
+ 			InternalWriteBreakpointIntoAddress( dev, matchingbreakpoint );
+ 		}
+ 		else

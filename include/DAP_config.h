@@ -53,6 +53,7 @@ This information includes:
 
 #ifdef DEBUG_ON_ZERO
 #include "led_signal.h"
+#include "ch32_transport.h"
 #endif
 
 /// Processor Clock of the Cortex-M MCU used in the Debug Unit.
@@ -94,7 +95,7 @@ This information includes:
 /// This configuration settings is used to optimize the communication performance with the
 /// debugger and depends on the USB peripheral. Typical vales are 64 for Full-speed USB HID or WinUSB,
 /// 1024 for High-speed USB HID and 512 for High-speed USB WinUSB.
-#define DAP_PACKET_SIZE         512U           ///< Specifies Packet Size in bytes.
+#define DAP_PACKET_SIZE          64U           ///< Full-speed USB packet size; exact-size OUT transfers complete.
 
 /// Maximum Package Buffers for Command and Response data.
 /// This configuration settings is used to optimize the communication performance with the
@@ -104,13 +105,17 @@ This information includes:
 
 /// Indicate that UART Serial Wire Output (SWO) trace is available.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
-#define SWO_UART                0               ///< SWO UART:  1 = available, 0 = not available.
+#ifdef DEBUG_ON_ZERO
+#define SWO_UART                1
+#else
+#define SWO_UART                0
+#endif
 
 /// USART Driver instance number for the UART SWO.
 #define SWO_UART_DRIVER         0               ///< USART Driver instance number (Driver_USART#).
 
 /// Maximum SWO UART Baudrate.
-#define SWO_UART_MAX_BAUDRATE   10000000U       ///< SWO UART Maximum Baudrate in Hz.
+#define SWO_UART_MAX_BAUDRATE   2000000U       ///< SWO UART Maximum Baudrate in Hz.
 
 /// Indicate that Manchester Serial Wire Output (SWO) trace is available.
 /// This information is returned by the command \ref DAP_Info as part of <b>Capabilities</b>.
@@ -312,19 +317,22 @@ Configures the DAP Hardware I/O pins for JTAG mode:
  - TDO to input mode.
  
  PicoDualProbe: JTAG uses SIO GPIO bit-banging. SWD uses PIO.
- When switching from SWD to JTAG, we deinit PIO and reclaim GP2/GP3 for SIO.
+ When switching from SWD to JTAG, release the PIO pins for SIO.
 */
 __STATIC_INLINE void PORT_JTAG_SETUP (void) {
-  // Deinit PIO (releases GP2/GP3 from PIO control)
+#ifdef DEBUG_ON_ZERO
+  ch32_transport_stop();
+#endif
+  // Release PIO control of the SWD pins
   probe_deinit();
   
-  // Re-init TCK (GP2) as SIO GPIO output, idle high
+  // Re-init TCK as SIO GPIO output, idle high
   gpio_init(PROBE_PIN_SWCLK);
   gpio_set_dir(PROBE_PIN_SWCLK, GPIO_OUT);
   gpio_put(PROBE_PIN_SWCLK, 1);
   
-  // Re-init TMS (GP1) as SIO GPIO output, idle high
-  // In DirtyJTAG pinout, TMS is separate from SWDIO
+  // Re-init TMS as SIO GPIO output, idle high
+  // TMS may be separate from SWDIO
 #ifdef PROBE_PIN_TMS
   gpio_init(PROBE_PIN_TMS);
   gpio_set_dir(PROBE_PIN_TMS, GPIO_OUT);
@@ -350,7 +358,7 @@ __STATIC_INLINE void PORT_JTAG_SETUP (void) {
   gpio_pull_up(PROBE_PIN_RESET);
   
 #ifdef DEBUG_ON_ZERO
-  led_signal_set(4);  // JTAG = yellow-yellow
+  led_signal_set(4);  // JTAG mode
 #endif
 }
 
@@ -362,10 +370,13 @@ Configures the DAP Hardware I/O pins for Serial Wire Debug (SWD) mode:
 // hack - zap our "stop doing divides everywhere" cache
 extern volatile uint32_t cached_delay;
 __STATIC_INLINE void PORT_SWD_SETUP (void) {
+#ifdef DEBUG_ON_ZERO
+  ch32_transport_stop();
+#endif
   probe_init();
   cached_delay = 0;
 #ifdef DEBUG_ON_ZERO
-  led_signal_set(3);  // SWD = green-green
+  led_signal_set(3);  // SWD mode
 #endif
 }
 
@@ -375,6 +386,16 @@ Disables the DAP Hardware I/O pins which configures:
 */
 __STATIC_INLINE void PORT_OFF (void) {
   probe_deinit();
+#ifdef DEBUG_ON_ZERO
+  // JTAG uses SIO rather than the SWD PIO, so release those pins as well.
+  gpio_deinit(PROBE_PIN_SWCLK);
+  gpio_deinit(PROBE_PIN_SWDIO);
+  gpio_deinit(PROBE_PIN_TDI);
+  gpio_deinit(PROBE_PIN_TMS);
+  gpio_deinit(PROBE_PIN_TDO);
+  gpio_deinit(PROBE_PIN_RESET);
+  led_signal_set(1);
+#endif
 }
 
 

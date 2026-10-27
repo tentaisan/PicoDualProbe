@@ -47,7 +47,7 @@ static int sm = -1;
 // PIO program offset
 static int offset = -1;
 // UART RX GPIO 1 pin
-static const uint rx_pin = PROBE_UART_RX;
+#define rx_pin PROBE_UART_RX
 
 // Frequency hash table to store samples occurance
 static HashTable *freq_table;

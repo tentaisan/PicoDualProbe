@@ -1,0 +1,13 @@
+--- a/minichlink/minichlink.c
++++ b/minichlink/minichlink.c
+@@ -1363,6 +1363,10 @@
+ 		MCF.WriteReg32( dev, DMCONTROL, 0x80000001 ); // Make the debug module work properly.
+ 		MCF.WriteReg32( dev, DMCONTROL, 0x80000001 ); // Initiate halt request.
+ 
++		// Disable leftover autoexec before reading DATA0: otherwise the read can
++		// re-run an old program-buffer command and clobber x8 before we save it.
++		MCF.WriteReg32( dev, DMABSTRACTAUTO, 0 );
++		MCF.WriteReg32( dev, DMABSTRACTCS, 0x08000700 );
+ 		// Tricky, this function needs to clean everything up because it may be used entering debugger.
+ 		uint32_t old_data0;
+ 		MCF.ReadReg32( dev, DMDATA0, &old_data0 );

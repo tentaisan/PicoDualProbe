@@ -106,6 +106,9 @@ static uint8_t DAP_Info(uint8_t id, uint8_t *info) {
                 /* Atomic Commands  */     (1U << 4)       |
                 ((TIMESTAMP_CLOCK != 0U) ? (1U << 5) : 0U) |
                 ((SWO_STREAM != 0U)      ? (1U << 6) : 0U);
+#ifdef DEBUG_ON_ZERO
+      if (!zero_settings_active.swo_enabled) info[0] &= ~(1U << 2);
+#endif
       length = 1U;
       break;
     case DAP_ID_TIMESTAMP_CLOCK:
@@ -1734,6 +1737,14 @@ uint32_t DAP_ExecuteCommand(const uint8_t *request, uint8_t *response) {
     *response++ = (uint8_t)cnt;
     num = (2U << 16) | 2U;
     while (cnt--) {
+#ifdef DEBUG_ON_ZERO
+      /* Settings writes need the USB packet length, unavailable in a nested command. */
+      if (*request == ID_DAP_Vendor1) {
+        *response = ID_DAP_Invalid;
+        num += (1U << 16) | 1U;
+        break;
+      }
+#endif
       n = DAP_ProcessCommand(request, response);
       num += n;
       request  += (uint16_t)(n >> 16);

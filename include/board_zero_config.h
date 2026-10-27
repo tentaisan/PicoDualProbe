@@ -27,56 +27,26 @@
 #ifndef BOARD_ZERO_H_
 #define BOARD_ZERO_H_
 
-// ============================================================================
-// PicoDualProbe — Waveshare RP2040-Zero (23×18mm, USB-C, WS2812 on GP16)
-//
-// Pin map (matches DirtyJTAG Zero soldering):
-//   GP0  = TDI            (JTAG only)
-//   GP1  = TMS / SWDIO    (shared by SWD and JTAG)
-//   GP2  = TCK / SWCLK    (shared by SWD and JTAG)
-//   GP3  = TDO            (JTAG only)
-//   GP4  = nRESET         (open-drain, active-low)
-//   GP16 = WS2812 RGB LED (status)
-//   GP12 = UART TX → target RX
-//   GP13 = UART RX ← target TX
-//
-// JTAG pinout matches DirtyJTAG BOARD_RP2040_ZERO exactly.
-// ============================================================================
-
+// Temporary RP2040-Zero pin assignment. Change these definitions to suit wiring.
 #define PROBE_IO_RAW
 #define PROBE_CDC_UART
 
-// PIO config (SWD mode) — GP2/GP1 are NOT consecutive, so use GP2 for SWCLK
-// and GP1 for SWDIO. PIO needs consecutive pins, so we use offset 1:
-// GP1=SWDIO, GP2=SWCLK — but PIO sideset needs SWCLK first.
-// Actually PIO requires consecutive: use GP2=SWCLK, GP3=SWDIO for SWD PIO.
-// But GP3 is TDO in JTAG... SWD and JTAG share TCK/SWCLK and TMS/SWDIO.
-// DirtyJTAG: GP2=TCK, GP1=TMS. These aren't consecutive for PIO.
-// Solution: SWD PIO uses GP2(SWCLK)+GP3(SWDIO), JTAG uses GP2(TCK)+GP1(TMS)+GP0(TDI)+GP3(TDO)
-// SWD and JTAG share TCK/SWCLK=GP2. SWDIO=GP3 (PIO), TMS=GP1 (SIO in JTAG mode).
-// This means SWD uses GP2/GP3 (consecutive, PIO works), JTAG uses GP0/1/2/3/4.
-
+#include "zero_settings.h"
+extern zero_settings_t zero_settings_active;
 #define PROBE_SM 0
-#define PROBE_PIN_OFFSET 2   // GP2=SWCLK, GP3=SWDIO (consecutive for PIO)
-#define PROBE_PIN_SWCLK (PROBE_PIN_OFFSET + 0) // GP2 = TCK/SWCLK
-#define PROBE_PIN_SWDIO (PROBE_PIN_OFFSET + 1) // GP3 = TDO/SWDIO
-
-// JTAG pin definitions (used by DAP_config.h JTAG macros)
-#define PROBE_PIN_TDI   0   // GP0 = TDI
-#define PROBE_PIN_TDO   3   // GP3 = TDO (shared with SWDIO)
-#define PROBE_PIN_TMS   1   // GP1 = TMS (separate from SWDIO in JTAG mode)
-
-// Target reset config (open-drain, active-low)
-#define PROBE_PIN_RESET 4   // GP4 = nRST
-
-// UART config (CDC bridge to target console)
-#define PROBE_UART_TX 12
-#define PROBE_UART_RX 13
-#define PROBE_UART_INTERFACE uart0
+#define PROBE_PIN_OFFSET (zero_settings_active.swclk)
+#define PROBE_PIN_SWCLK (zero_settings_active.swclk)
+#define PROBE_PIN_SWDIO (zero_settings_active.swdio)
+#define PROBE_PIN_TDI (zero_settings_active.tdi)
+#define PROBE_PIN_TMS (zero_settings_active.tms)
+#define PROBE_PIN_TDO (zero_settings_active.tdo)
+#define PROBE_PIN_RESET (zero_settings_active.reset)
+#define PROBE_UART_TX (zero_settings_active.uart_tx)
+#define PROBE_UART_RX (zero_settings_active.uart_rx)
+#define PROBE_UART_INTERFACE uart1
 #define PROBE_UART_BAUDRATE 115200
-
-// Status LED — WS2812 on GP16 (PIO SM1, see led_signal.c)
-#define PICO_DEFAULT_WS2812_PIN 16
+#define PROBE_SWO_PIN (zero_settings_active.swo)
+#define PROBE_LED_ACTIVE_HIGH (zero_settings_active.led_active_high)
 
 #define PROBE_PRODUCT_STRING "PicoDualProbe Zero (CMSIS-DAP)"
 

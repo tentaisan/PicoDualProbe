@@ -43,6 +43,24 @@ void SWJ_Sequence (uint32_t count, const uint8_t *data) {
   uint32_t bits;
   uint32_t n;
 
+#if (DAP_JTAG != 0)
+  // In JTAG mode the SWD PIO state machine is stopped and TMS is driven
+  // through SIO. SWJ sequences, including the TAP reset, must use SIO too.
+  if (DAP_Data.debug_port == DAP_PORT_JTAG) {
+    for (uint32_t bit = 0; bit < count; ++bit) {
+      if (data[bit / 8] & (1u << (bit % 8)))
+        PIN_SWDIO_TMS_SET();
+      else
+        PIN_SWDIO_TMS_CLR();
+      PIN_SWCLK_TCK_CLR();
+      PIN_DELAY_SLOW(DAP_Data.clock_delay);
+      PIN_SWCLK_TCK_SET();
+      PIN_DELAY_SLOW(DAP_Data.clock_delay);
+    }
+    return;
+  }
+#endif
+
   if (DAP_Data.clock_delay != cached_delay) {
     probe_set_swclk_freq(MAKE_KHZ(DAP_Data.clock_delay));
     cached_delay = DAP_Data.clock_delay;

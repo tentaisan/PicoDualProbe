@@ -287,10 +287,11 @@ extern void     DAP_Setup (void);
 #if defined(__CC_ARM)
 __STATIC_FORCEINLINE void PIN_DELAY_SLOW (uint32_t delay) {
   uint32_t count = delay;
-  while (--count);
+  if (count != 0U) while (--count);
 }
 #else
 __STATIC_FORCEINLINE void PIN_DELAY_SLOW (uint32_t delay) {
+  if (delay == 0U) return;
   __ASM volatile (
   ".syntax unified\n"
   "0:\n\t"

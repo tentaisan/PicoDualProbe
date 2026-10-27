@@ -1,0 +1,63 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install host test dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-usb
+      - name: Run host tests
+        run: ./tests/run.sh
+
+  firmware:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [zero, pico]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Check out Pico SDK 2.1.1
+        uses: actions/checkout@v4
+        with:
+          repository: raspberrypi/pico-sdk
+          ref: bddd20f928ce76142793bef434d4f75f4af6e433
+          path: pico-sdk
+      - name: Initialize TinyUSB
+        working-directory: pico-sdk
+        run: git submodule update --init lib/tinyusb
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libusb-1.0-0-dev pkg-config
+      - name: Build firmware
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build.sh "${{ matrix.target }}"
+      - name: Upload Zero firmware
+        if: matrix.target == 'zero'
+        uses: actions/upload-artifact@v4
+        with:
+          name: debugprobe-on-zero
+          path: build-zero/debugprobe_on_zero.uf2
+          if-no-files-found: error
+      - name: Upload Pico firmware
+        if: matrix.target == 'pico'
+        uses: actions/upload-artifact@v4
+        with:
+          name: debugprobe-on-pico
+          path: build/debugprobe_on_pico.uf2
+          if-no-files-found: error

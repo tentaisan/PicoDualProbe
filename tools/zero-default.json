@@ -1,0 +1,19 @@
+{
+  "swclk": 1,
+  "swdio": 2,
+  "tdi": 3,
+  "tms": 6,
+  "tdo": 7,
+  "reset": 8,
+  "uart_tx": 4,
+  "uart_rx": 5,
+  "swo": 17,
+  "led_error": 9,
+  "led_jtag": 10,
+  "led_swd": 11,
+  "led_ready": 12,
+  "led_reserved": 13,
+  "led_enabled": 31,
+  "led_active_high": 1,
+  "swo_enabled": 1
+}

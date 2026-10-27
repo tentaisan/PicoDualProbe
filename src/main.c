@@ -152,11 +152,22 @@ int main(void) {
     // Declare pins in binary information
     bi_decl_config();
 
+#ifdef DEBUG_ON_ZERO
+    extern void zero_storage_init(void);
+    zero_storage_init();
+#endif
     board_init();
     usb_serial_init();
     cdc_uart_init();
-    tusb_init();
+
+#ifdef DEBUG_ON_ZERO
+    // UART0 is reserved for SWO. Probe logging is disabled in this build.
+    extern void swo_hw_init(void);
+    swo_hw_init();
+#else
     stdio_uart_init();
+#endif
+    tusb_init();
 
 #ifdef DEBUG_ON_ZERO
     led_signal_init();

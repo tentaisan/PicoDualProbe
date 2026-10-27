@@ -1,5 +1,16 @@
 *.uf2
 build/
 build-zero/
+build-ch32-minichlink/
 _deps/
-!releases/*.uf2
+/pico-sdk/
+
+# Local workspace configuration and hardware backups
+/.codex/
+/.devcontainer/
+/pinout
+/recovery/
+
+# Python cache files
+__pycache__/
+*.py[cod]

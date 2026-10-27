@@ -1,7 +1,10 @@
 #!/bin/sh
-if command -v git &>/dev/null
+SOURCE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if command -v git >/dev/null 2>&1
 then
-    VERSION=$(git describe --exact-match --tags 2> /dev/null || git rev-parse --short HEAD)   
+    VERSION=$(git -C "$SOURCE_DIR" describe --exact-match --tags 2>/dev/null ||
+              git -C "$SOURCE_DIR" rev-parse --short HEAD 2>/dev/null ||
+              printf '%s' unknown)
 else
     VERSION="unknown"
 fi

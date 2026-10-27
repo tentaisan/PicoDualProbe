@@ -1,3 +1,44 @@
+#include "probe_config.h"
+#ifdef DEBUG_ON_ZERO
+#include "led_signal.h"
+#include "pico/stdlib.h"
+
+static uint8_t current_state;
+#define led_pins (zero_settings_active.led)
+#define LED_ROLE_COUNT 5u
+
+void led_signal_init(void) {
+    for (unsigned i = 0; i < LED_ROLE_COUNT; ++i) {
+        if (!(zero_settings_active.led_enabled & (1u << i))) continue;
+        gpio_init(led_pins[i]);
+        gpio_put(led_pins[i], !PROBE_LED_ACTIVE_HIGH);
+        gpio_set_dir(led_pins[i], GPIO_OUT);
+    }
+}
+
+void led_signal_set(uint8_t state) {
+    if (state > LED_SIGNAL_STATE_MAX) return;
+    current_state = state;
+    for (unsigned i = 0; i < LED_ROLE_COUNT; ++i) {
+        if (!(zero_settings_active.led_enabled & (1u << i))) continue;
+        bool on = (i == 0 && state == 2) || (i == 1 && state == 4) ||
+                  (i == 2 && state == 3) || (i == 3 && state == 1);
+        gpio_put(led_pins[i], on ? PROBE_LED_ACTIVE_HIGH : !PROBE_LED_ACTIVE_HIGH);
+    }
+}
+
+bool led_signal_test(uint8_t role, bool on) {
+    if (role >= LED_ROLE_COUNT || !(zero_settings_active.led_enabled & (1u<<role))) return false;
+    if (on) gpio_put(led_pins[role], PROBE_LED_ACTIVE_HIGH);
+    else led_signal_set(current_state);
+    return true;
+}
+uint8_t led_signal_get(void) { return current_state; }
+const char *led_signal_name(uint8_t state) {
+    static const char *names[] = {"off", "ready", "error", "swd", "jtag", "reserved", "reserved", "reserved", "reserved", "reserved"};
+    return state < LED_SIGNAL_STATE_COUNT ? names[state] : "invalid";
+}
+#else
 #include "led_signal.h"
 #include "ws2812.pio.h"
 #include "pico/stdlib.h"
@@ -179,3 +220,4 @@ const char* led_signal_name(uint8_t state) {
     }
     return "invalid";
 }
+#endif

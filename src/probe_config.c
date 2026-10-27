@@ -9,6 +9,7 @@
 void bi_decl_config()
 {
     bi_decl(bi_program_version_string(PROBE_VERSION));
+#ifndef DEBUG_ON_ZERO
 #ifdef PROBE_PIN_RESET
     bi_decl(bi_1pin_with_name(PROBE_PIN_RESET, "PROBE RESET"));
 #endif
@@ -46,4 +47,5 @@ void bi_decl_config()
     bi_decl(bi_1pin_with_name(PROBE_UART_DTR, "PROBE UART DTR"));
 #endif
 
+#endif /* static pin binary metadata is not valid for runtime config */
 }

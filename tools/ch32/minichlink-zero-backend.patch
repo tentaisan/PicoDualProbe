@@ -1,0 +1,22 @@
+--- a/minichlink/minichlink.c
++++ b/minichlink/minichlink.c
+@@ -37,6 +37,8 @@
+ static int DefaultRebootIntoBootloader( void * dev );
+ struct MiniChlinkFunctions MCF;
+ 
++void *TryInit_Zero(const init_hints_t *hints);
++
+ void * MiniCHLinkInitAsDLL( struct MiniChlinkFunctions ** MCFO, const init_hints_t* init_hints )
+ {
+ 	void * dev = 0;
+@@ -48,7 +50,9 @@
+ 	const char * specpgm = init_hints->specific_programmer;
+ 	if( specpgm )
+ 	{
+-		if( strcmp( specpgm, "linke" ) == 0 )
++		if( ( strcmp( specpgm, "zero" ) == 0 || strcmp( specpgm, "zero203" ) == 0 ) )
++			dev = TryInit_Zero(init_hints);
++		else if( strcmp( specpgm, "linke" ) == 0 )
+ 			dev = TryInit_WCHLinkE(init_hints);
+ 		else if( strcmp( specpgm, "isp" ) == 0 )
+ 			dev = TryInit_WCHISP();

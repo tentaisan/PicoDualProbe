@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.13)
+include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+project(swo_source C CXX ASM)
+pico_sdk_init()
+set(SWO_TEST_BAUD 115200 CACHE STRING "UART waveform baud rate")
+add_executable(swo_source main.c)
+target_compile_definitions(swo_source PRIVATE SWO_TEST_BAUD=${SWO_TEST_BAUD})
+target_link_libraries(swo_source pico_stdlib hardware_uart)
+pico_set_binary_type(swo_source no_flash)
+pico_add_extra_outputs(swo_source)
+
+set_target_properties(swo_source PROPERTIES LINKER_LANGUAGE C)

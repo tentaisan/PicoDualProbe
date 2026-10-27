@@ -27,6 +27,10 @@
  
 #include "DAP_config.h"
 #include "DAP.h"
+#ifdef DEBUG_ON_ZERO
+#include "ch32_transport.h"
+#include "zero_config_cmd.h"
+#endif
 
 //**************************************************************************************************
 /** 
@@ -45,6 +49,7 @@ file to the MDK-ARM project under the file group Configuration.
 \return          number of bytes in response (lower 16 bits)
                  number of bytes in request (upper 16 bits)
 */
+
 uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
   uint32_t num = (1U << 16) | 1U;
 
@@ -52,16 +57,44 @@ uint32_t DAP_ProcessVendorCommand(const uint8_t *request, uint8_t *response) {
 
   switch (*request++) {          // first byte in request is Command ID
     case ID_DAP_Vendor0:
-#if 0                            // example user command
-      num += 1U << 16;           // increment request count
-      if (*request == 1U) {      // when first command data byte is 1
-        *response++ = 'X';       // send 'X' as response
-        num++;                   // increment response count
+#ifdef DEBUG_ON_ZERO
+      // Experimental CH32V003 SWIO transport. Status is 0 on success.
+      {
+        uint8_t op = *request++;
+        bool ok = false;
+        uint32_t value = 0;
+        num += (1U << 16) | 1U; // operation byte and status
+        if (op == 0) {
+          if (DAP_Data.debug_port == DAP_PORT_DISABLED) { ok = ch32_transport_start(CH32_TRANSPORT_SWIO); }
+        } else if (op == 1) {
+          ch32_transport_stop(); ok = true;
+        } else if (op == 2) {
+          ok = ch32_transport_read(*request, &value);
+          num += (1U << 16) | 4U;
+        } else if (op == 3) {
+          uint8_t addr = *request++;
+          value = (uint32_t)request[0] | ((uint32_t)request[1] << 8) |
+                  ((uint32_t)request[2] << 16) | ((uint32_t)request[3] << 24);
+          ok = ch32_transport_write(addr, value);
+          num += 5U << 16;
+        }
+        else if (op == 4) {
+          if (DAP_Data.debug_port == DAP_PORT_DISABLED) { ok = ch32_transport_start(CH32_TRANSPORT_RVSWD); }
+        }
+        *response++ = ok ? 0 : 1;
+        if (op == 2) {
+          *response++ = (uint8_t)value; *response++ = (uint8_t)(value >> 8);
+          *response++ = (uint8_t)(value >> 16); *response++ = (uint8_t)(value >> 24);
+        }
       }
 #endif
       break;
 
-    case ID_DAP_Vendor1:  break;
+    case ID_DAP_Vendor1:
+#ifdef DEBUG_ON_ZERO
+      num += zero_config_command(request, response, DAP_Data.debug_port != DAP_PORT_DISABLED);
+#endif
+      break;
     case ID_DAP_Vendor2:  break;
     case ID_DAP_Vendor3:  break;
     case ID_DAP_Vendor4:  break;

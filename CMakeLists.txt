@@ -26,13 +26,20 @@ add_executable(debugprobe
         src/tusb_edpt_handler.c
         src/autobaud.c
         src/led_signal.c
+        src/ch32_swio.c
+        src/ch32_transport.c
+        src/zero_settings.c
+        src/zero_storage.c
+        src/zero_config_cmd.c
+        src/swo_trace.c
+        src/swo_uart_rp2040.c
+        src/ch32_rvswd.c
 )
 
 target_sources(debugprobe PRIVATE
         CMSIS_DAP/CMSIS/DAP/Firmware/Source/DAP.c
         CMSIS_DAP/CMSIS/DAP/Firmware/Source/JTAG_DP.c
         CMSIS_DAP/CMSIS/DAP/Firmware/Source/DAP_vendor.c
-        CMSIS_DAP/CMSIS/DAP/Firmware/Source/SWO.c
         #CMSIS_DAP/CMSIS/DAP/Firmware/Source/SW_DP.c
         )
 
@@ -48,6 +55,7 @@ pico_generate_pio_header(debugprobe ${CMAKE_CURRENT_LIST_DIR}/src/probe.pio)
 pico_generate_pio_header(debugprobe ${CMAKE_CURRENT_LIST_DIR}/src/probe_oen.pio)
 pico_generate_pio_header(debugprobe ${CMAKE_CURRENT_LIST_DIR}/src/autobaud.pio)
 pico_generate_pio_header(debugprobe ${CMAKE_CURRENT_LIST_DIR}/src/ws2812.pio)
+pico_generate_pio_header(debugprobe ${CMAKE_CURRENT_LIST_DIR}/src/ch32_swio.pio)
 
 target_include_directories(debugprobe PRIVATE src)
 
@@ -65,6 +73,7 @@ add_dependencies(debugprobe version)
 
 target_compile_definitions (debugprobe PRIVATE
 	PICO_RP2040_USB_DEVICE_ENUMERATION_FIX=1
+	PICO_FLASH_ASSERT_ON_UNSAFE=0
 )
 
 option (DEBUG_ON_PICO "Compile firmware for the Pico instead of Debug Probe" OFF)
@@ -95,10 +104,12 @@ endif ()
 
 
 target_link_libraries(debugprobe PRIVATE
+        m
         pico_multicore
+        pico_flash
+        hardware_flash
         pico_stdlib
         pico_unique_id
-        pico_status_led
         tinyusb_device
         tinyusb_board
         hardware_pio
@@ -106,8 +117,10 @@ target_link_libraries(debugprobe PRIVATE
         hardware_irq
         hardware_clocks
         FreeRTOS-Kernel
-        FreeRTOS-Kernel-Heap1
+        FreeRTOS-Kernel-Heap4
 )
+
+set_target_properties(debugprobe PROPERTIES LINKER_LANGUAGE C)
 
 pico_set_binary_type(debugprobe copy_to_ram)
 

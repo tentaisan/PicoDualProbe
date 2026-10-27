@@ -2,6 +2,7 @@
 #define LED_SIGNAL_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // 9-state surge-pulse signaling system.
 // Base: blue surge 0% -> 50% -> 0% in ~1 sec.
@@ -29,6 +30,7 @@
 #define LED_SIGNAL_STATE_MAX    9
 
 void led_signal_init(void);
+bool led_signal_test(uint8_t role, bool on);
 void led_signal_set(uint8_t state);
 uint8_t led_signal_get(void);
 const char* led_signal_name(uint8_t state);
